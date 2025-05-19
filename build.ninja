@@ -1,0 +1,37 @@
+builddir = .ninja
+
+uxndir = ../../uxn
+
+rule solo5-cc
+  command = x86_64-solo5-none-static-cc -c $in -o $out
+
+rule solo5-ld
+    command = x86_64-solo5-none-static-ld -z solo5-abi=hvt $in -o $out
+
+rule solo5-gen-manifest
+    command = solo5-elftool gen-manifest $in $out
+
+rule hex-include
+    command = xxd -i $in > $out
+
+rule uxnasm
+    command = <$in $uxndir/uxnmin $uxndir/uxnasm.rom > $out
+
+build $builddir/manifest.c: solo5-gen-manifest manifest.json
+
+build $builddir/manifest.o: solo5-cc $builddir/manifest.c
+
+build $builddir/uxn.rom: uxnasm uxn.tal
+
+build $builddir/uxn.rom.hex: hex-include $builddir/uxn.rom
+
+build $builddir/main.o: solo5-cc main.c $builddir/uxn.rom.hex
+
+build $builddir/main.hvt: solo5-ld $builddir/manifest.o $builddir/main.o
+
+# phony rule to run solo5-hvt with the generated binary
+rule run
+    command = solo5-hvt $in
+
+build run: run $builddir/main.hvt
+
