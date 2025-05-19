@@ -1,6 +1,21 @@
 builddir = .ninja
 
-uxndir = ../../uxn
+# bootstrap uxn
+
+rule cc
+    command = cc $in -o $out
+
+rule xxd-reverse
+    command = xxd -r -p $in $out
+
+rule uxnasm
+    command = <$in $builddir/uxnmin $builddir/uxnasm.rom > $out
+
+build $builddir/uxnmin : cc uxn/uxnmin.c
+
+build $builddir/uxnasm.rom : xxd-reverse uxn/drifblim.rom.hex
+
+# solo5
 
 rule solo5-cc
   command = x86_64-solo5-none-static-cc -c $in -o $out
@@ -14,14 +29,12 @@ rule solo5-gen-manifest
 rule hex-include
     command = xxd -i $in > $out
 
-rule uxnasm
-    command = <$in $uxndir/uxnmin $uxndir/uxnasm.rom > $out
 
 build $builddir/manifest.c: solo5-gen-manifest manifest.json
 
 build $builddir/manifest.o: solo5-cc $builddir/manifest.c
 
-build $builddir/uxn.rom: uxnasm uxn.tal
+build $builddir/uxn.rom: uxnasm uxn.tal | $builddir/uxnasm.rom $builddir/uxnmin
 
 build $builddir/uxn.rom.hex: hex-include $builddir/uxn.rom
 
