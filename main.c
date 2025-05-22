@@ -7,7 +7,7 @@ typedef struct {
 typedef struct {
 	unsigned char dev[0x100];
 	Stack wst, rst;
-	unsigned char ram[];
+	unsigned char ram[0x10000];
 } Uxn;
 
 Uxn uxn;
@@ -147,16 +147,23 @@ uxn_eval(unsigned short pc)
 // 	return uxn.dev[0x0f] & 0x7f;
 // }
 
+// we have to provide a very simple/slow implementation of memcpy here
+// (gcc requires it for some optimizations)
+void *memcpy(void *restrict dest, const void *restrict src, size_t n)
+{
+	unsigned char *d = dest;
+	const unsigned char *s = src;
+	for (; n; n--) *d++ = *s++;
+	return dest;
+}
 
 int solo5_app_main(const struct solo5_start_info *info) {
 	#include ".ninja/uxn.rom.hex"
-	// copy the rom to the heap (no memcpy available)
-	for (int i = 0; i < _ninja_uxn_rom_len; i++) {
-		uxn.ram[0x100 + i] = _ninja_uxn_rom[i];
-	}
 	// assign all our heap memory to the uxn struct
 	// TODO: what happens if the rom oversteps the heap? should use heap_size somehow
 	uxn = *(Uxn *)info->heap_start;
+
+	memcpy(uxn.ram + 0x100, _ninja_uxn_rom, _ninja_uxn_rom_len);
     // TODO: commandline args?
 	if(uxn_eval(0x0100) && uxn.dev[0x10]) {
 	}
