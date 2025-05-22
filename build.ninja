@@ -38,7 +38,7 @@ build $builddir/uxn.rom: uxnasm uxn.tal | $builddir/uxnasm.rom $builddir/uxnmin
 
 build $builddir/uxn.rom.hex: hex-include $builddir/uxn.rom
 
-build $builddir/main.o: solo5-cc main.c $builddir/uxn.rom.hex
+build $builddir/main.o: solo5-cc main.c | $builddir/uxn.rom.hex
 
 build $builddir/main.hvt: solo5-ld $builddir/manifest.o $builddir/main.o
 
